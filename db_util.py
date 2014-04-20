@@ -76,11 +76,11 @@ Insert Certificate into database
 '''
 def insertCert(db,version,serial_num,sig_alg,not_before,not_after):
     version = int(version)
-    serial_num = int(serial_num)
+    serial_num = str(serial_num) or 'NULL'
     sig_alg = str(sig_alg) or 'NULL'
     not_before = str(not_before) or 'NULL'
     not_after = str(not_after) or 'NULL'
-    insert_str = "INSERT INTO certificate(cert_version,cert_serial_num,cert_sig_alg,cert_not_before,cert_not_after) VALUES(%d,%d,%s,%s,%s)" %(version,serial_num,`sig_alg`,`not_before`,`not_after`)
+    insert_str = "INSERT INTO certificate(cert_version,cert_serial_num,cert_sig_alg,cert_not_before,cert_not_after) VALUES(%d,%s,%s,%s,%s)" %(version,`serial_num`,`sig_alg`,`not_before`,`not_after`)
     cursor = db.cursor()
     try:
         cursor.execute(insert_str)

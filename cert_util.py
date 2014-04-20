@@ -1,6 +1,9 @@
 import socket
 import ssl
 
+'''
+Download certificate with a specfic domain name 
+'''
 def downloadCert(domain_name):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(3)

@@ -5,11 +5,16 @@ from pkcs7_models import X509Certificate, PublicKeyInfo, ExtendedKeyUsageExt
 
 from pkcs7.asn1_models.decoder_workarounds import decode
 import chilkat
+import datetime
 
-#the dictionary of certificate algorithm type comes from http://msdn.microsoft.com/en-us/library/ff635603.aspx
-#and http://msdn.microsoft.com/en-us/library/ff635835.aspx
+'''
+the dictionary of certificate algorithm type comes from http://msdn.microsoft.com/en-us/library/ff635603.aspx
+and http://msdn.microsoft.com/en-us/library/ff635835.aspx
+'''
 CERT_ALG = {
-	#hash alg OID
+	'''
+	hash alg OID
+	'''
 	'1.2.840.113549.1.1.4' : 'md5RSA',
 	'1.2.840.113549.1.1.5' : 'sha1RSA',
 	'1.2.840.10040.4.3' : 'sha1DSA',
@@ -38,7 +43,9 @@ CERT_ALG = {
 	'1.2.840.10045.4.3.3' : 'sha384ECDSA',
 	'1.2.840.10045.4.3.4' : 'sha512ECDSA',
 	'1.2.840.10045.4.3' : 'specifiedECDSA',
-	#pulic key OID
+	'''
+	pulic key OID
+	'''
 	'1.2.840.113549.1.1.1' : 'RSA',
 	'1.2.840.10040.4.1' : 'DSA',
 	'1.2.840.10046.2.1' : 'DH',
@@ -134,13 +141,21 @@ def parse_pem(pemstr):
 	x509cert = x509_parse(cer)
 	tbs = x509cert.tbsCertificate
 	if tbs != None:
-		#version
+		'''
+		version
+		'''
 		dict["Version"] = tbs.version + 1
-		#Serial no
-		dict["Serial No"] = tbs.serial_number or ''   
-		#Signatue algorithm
+		'''
+		Serial no
+		'''
+		dict["Serial No"] = str(hex(tbs.serial_number))
+		'''
+		Signatue algorithm
+		'''
 		dict['Sig Alg'] = CERT_ALG[x509cert.signature_algorithm] if x509cert.signature_algorithm in CERT_ALG.keys() else ''
-		#Issuer
+		'''
+		Issuer
+		'''
 		temp = tbs.issuer.get_attributes()
 		temp_dict = {}
 
@@ -187,12 +202,16 @@ def parse_pem(pemstr):
 		temp_dict['OU'] = value
 		
 		dict['Issuer'] = temp_dict
-            		
-		#Not Before Not After
+        
+        '''    		
+		Not Before Not After
+		'''
 		dict['Not Before'] = tbs.validity.get_valid_from_as_datetime() or ''
 		dict['Not After'] = tbs.validity.get_valid_to_as_datetime() or ''
 		
-		#Subject
+		'''
+		Subject
+		'''
 		temp = tbs.subject.get_attributes()
 		temp_dict = {}
 		if 'CN' in temp.keys():
@@ -237,25 +256,18 @@ def parse_pem(pemstr):
 		temp_dict['OU'] = value	
 		dict['Subject'] = temp_dict
 
-		#public key algorithm && type
-		alg = ''
+		'''
+		public key algorithm && type
+		'''
+		if tbs.pub_key_info.alg in CERT_ALG.keys():
+			dict['pKeyAlg'] = CERT_ALG[tbs.pub_key_info.alg]
+		else:
+			dict['pKeyAlg'] = 'UNKNOWN'
 		temp_dict = {}
-		algParams = tbs.pub_key_info.key
-		if tbs.pub_key_info.algType == PublicKeyInfo.RSA:
-			temp_dict['pKeyType'] = 'RSA'
-			temp_dict['Modulus'] = hexlify(algParams["mod"])
-			temp_dict['Exponent'] = hex(algParams["exp"])
-		elif tbs.pub_key_info.algType == PublicKeyInfo.DSA:
-			temp_dict['pKeyType'] = 'DES'
-			temp_dict['Pub'] = hexlify(algParams['pub'])
-			temp_dict['P'] = hexlify(algParams['p'])
-			temp_dict['Q'] = hexlify(algParams['q'])
-			temp_dict['G'] = hexlify(algParams['g'])
-		
-		dict['pKeyAlg'] = temp_dict
-		temp_dict = {}
-		
-		#Extensions
+
+		'''
+		Extensions
+		'''
 		if tbs.authInfoAccessExt:
 			son_dict = {}
 			son_dict['is_critical'] = tbs.authInfoAccessExt.is_critical
@@ -361,7 +373,7 @@ def parse_pem(pemstr):
 			san = tbs.subjAltNameExt.value
 			son_dict = {}
 			son_dict['is_critical'] = tbs.subjAltNameExt.is_critical
-			son_dict['value'] = [str(san.names)] if str(san.names) else []
+			son_dict['value'] = san.names
 			temp_dict['subjAltNameExt'] = son_dict
 
 				
@@ -389,7 +401,8 @@ def parse_pem(pemstr):
 			temp_dict['nameConstraintsExt'] = son_dict
 	
 	dict['Extension'] = temp_dict
-	#signature
+	'''
+	signature
+	'''
 	dict['Signature'] = hexlify(x509cert.signature)
-	#print dict
 	return dict
